@@ -36,7 +36,7 @@
 
 ## Installation
 
-### **Cheack the releases for stand alone executable**
+### **Cheack the [releases](https://github.com/Cal-Sonic/Meshage_PR/releases) for stand-alone executable**
 
 ## Usage
 
