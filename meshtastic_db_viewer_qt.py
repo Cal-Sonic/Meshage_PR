@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QListWidget, QTreeWidget, QTreeWidgetItem, QFileDialog,
     QStackedWidget, QListWidgetItem, QTableWidget, QTableWidgetItem, QScrollArea,
     QSizePolicy, QSpacerItem, QDialog, QDialogButtonBox, QFormLayout, QLineEdit, QTextEdit,
-    QCheckBox, QMessageBox
+    QCheckBox, QMessageBox, QToolButton, QStyle, QGroupBox, QHeaderView
 )
 from PyQt6.QtCore import Qt
 import os
@@ -107,12 +107,54 @@ class MeshagePR(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Meshage_PR")
-        self.setGeometry(100, 100, 900, 600)
-        self.setStyleSheet('''
+        self.setGeometry(100, 100, 1100, 700)
+        # Modern stylesheet for the whole app (will be further refined)
+        self.setStyleSheet("""
             QMainWindow {
-                background: #181f2f;
+                background: #181A20;
+                font-family: 'Segoe UI', 'Inter', 'Arial', sans-serif;
+                font-size: 15px;
+                color: #E5E7EB;
             }
-        ''')
+            QWidget#sidebar {
+                background: #23272F;
+                border-top-right-radius: 18px;
+                border-bottom-right-radius: 18px;
+            }
+            QLabel#logo_label {
+                color: #3B82F6;
+                font-size: 26px;
+                font-weight: 700;
+                padding-left: 18px;
+                letter-spacing: 1px;
+            }
+            QToolButton {
+                background: transparent;
+                color: #E5E7EB;
+                border: none;
+                border-radius: 12px;
+                padding: 12px 18px;
+                font-size: 16px;
+                text-align: left;
+            }
+            QToolButton:hover, QToolButton:checked {
+                background: #3B82F6;
+                color: #fff;
+            }
+            QGroupBox {
+                background: #23272F;
+                border-radius: 16px;
+                margin-top: 16px;
+                padding: 18px;
+                border: 1px solid #353945;
+            }
+            QLabel.section_header {
+                color: #3B82F6;
+                font-size: 22px;
+                font-weight: 600;
+                margin-bottom: 12px;
+            }
+        """)
 
         # Main layout
         main_widget = QWidget()
@@ -121,106 +163,202 @@ class MeshagePR(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # Sidebar
+        # Sidebar (overhauled)
         self.sidebar = QWidget()
-        self.sidebar.setFixedWidth(180)
-        self.sidebar.setStyleSheet('''
-            QWidget {
-                background: #142047;
-                border-top-right-radius: 16px;
-                border-bottom-right-radius: 16px;
-            }
-        ''')
+        self.sidebar.setObjectName("sidebar")
+        self.sidebar.setFixedWidth(210)
         sidebar_layout = QVBoxLayout(self.sidebar)
-        sidebar_layout.setContentsMargins(0, 32, 0, 32)
-        sidebar_layout.setSpacing(12)
+        sidebar_layout.setContentsMargins(0, 24, 0, 24)
+        sidebar_layout.setSpacing(10)
         self.logo_label = QLabel("Meshage_PR")
-        self.logo_label.setStyleSheet('color: #fff; font-size: 22px; font-weight: bold; padding-left: 24px;')
+        self.logo_label.setObjectName("logo_label")
         sidebar_layout.addWidget(self.logo_label)
-        sidebar_layout.addSpacing(24)
-        self.btn_database = SidebarButton("User Node Info")
-        self.btn_nodes = SidebarButton("Connected Nodes")
-        self.btn_chats = SidebarButton("Chats")
-        self.btn_export_pdf = SidebarButton("Export PDF")
+        sidebar_layout.addSpacing(30)
+        # Navigation buttons (icons assigned later)
+        self.btn_database = QToolButton()
+        self.btn_database.setText("User Node Info")
+        self.btn_database.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.btn_nodes = QToolButton()
+        self.btn_nodes.setText("Connected Nodes")
+        self.btn_nodes.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.btn_chats = QToolButton()
+        self.btn_chats.setText("Chats")
+        self.btn_chats.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.btn_export_pdf = QToolButton()
+        self.btn_export_pdf.setText("Export PDF")
+        self.btn_export_pdf.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         sidebar_layout.addWidget(self.btn_database)
         sidebar_layout.addWidget(self.btn_nodes)
         sidebar_layout.addWidget(self.btn_chats)
         sidebar_layout.addWidget(self.btn_export_pdf)
         sidebar_layout.addStretch()
+        self.btn_settings = QToolButton()
+        self.btn_settings.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        self.btn_settings.setToolTip("Settings / About")
+        sidebar_layout.addWidget(self.btn_settings, alignment=Qt.AlignmentFlag.AlignLeft)
         main_layout.addWidget(self.sidebar)
 
-        # Stacked widget for main content
+        # Main content area (overhauled)
         self.stack = QStackedWidget()
+        self.stack.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         main_layout.addWidget(self.stack)
 
-        # User Node Info Page (replaces Database page)
+        # User Node Info Page (card style)
         self.user_node_page = QWidget()
+        self.user_node_page.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         user_node_layout = QVBoxLayout(self.user_node_page)
-        user_node_layout.setContentsMargins(32, 32, 32, 32)
-        user_node_layout.setSpacing(16)
+        user_node_layout.setContentsMargins(40, 40, 40, 40)
+        user_node_layout.setSpacing(20)
+        # Section header
+        user_header = QLabel("User Node Info")
+        user_header.setProperty("class", "section_header")
+        user_node_layout.addWidget(user_header)
+        # Card container
+        user_card = QGroupBox()
+        user_card_layout = QVBoxLayout(user_card)
         self.select_button = QPushButton("Select Meshtastic .db File")
-        self.select_button.setStyleSheet('''
-            QPushButton {
-                background: #223366;
-                color: #fff;
-                border-radius: 8px;
-                padding: 10px 24px;
-                font-size: 16px;
-            }
-            QPushButton:hover {
-                background: #2d3a5a;
-            }
-        ''')
-        user_node_layout.addWidget(self.select_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        user_card_layout.addWidget(self.select_button, alignment=Qt.AlignmentFlag.AlignLeft)
         self.user_node_info_label = QLabel("No database selected.")
-        self.user_node_info_label.setStyleSheet('color: #fff; font-size: 15px; background: #232b45; border-radius: 12px; padding: 16px;')
-        user_node_layout.addWidget(self.user_node_info_label)
-        self.user_node_page.setStyleSheet('background: #181f2f; border-radius: 16px;')
+        self.user_node_info_label.setWordWrap(True)
+        user_card_layout.addWidget(self.user_node_info_label)
+        user_node_layout.addWidget(user_card)
+        user_node_layout.addStretch()
         self.stack.addWidget(self.user_node_page)
 
-        # Connected Nodes Page
+        # Connect select_button to select_db_file
+        self.select_button.clicked.connect(self.select_db_file)
+
+        # Connected Nodes Page (modern card/table style)
         self.nodes_page = QWidget()
+        self.nodes_page.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         nodes_layout = QVBoxLayout(self.nodes_page)
-        nodes_layout.setContentsMargins(32, 32, 32, 32)
-        nodes_layout.setSpacing(16)
-        self.nodes_tree = QTreeWidget()
-        self.nodes_tree.setHeaderLabels(["num", "user_longName", "user_shortName", "lastHeard", "hopsAway", "channel"])
-        self.nodes_tree.setStyleSheet('background: #232b45; color: #fff; border-radius: 8px; font-size: 14px;')
-        nodes_layout.addWidget(self.nodes_tree)
-        self.nodes_page.setStyleSheet('background: #181f2f; border-radius: 16px;')
+        nodes_layout.setContentsMargins(40, 40, 40, 40)
+        nodes_layout.setSpacing(20)
+        nodes_header = QLabel("Connected Nodes")
+        nodes_header.setProperty("class", "section_header")
+        nodes_layout.addWidget(nodes_header)
+        nodes_card = QGroupBox()
+        nodes_card_layout = QVBoxLayout(nodes_card)
+        # Table with placeholder data
+        self.nodes_table = QTableWidget(3, 6)
+        self.nodes_table.setHorizontalHeaderLabels(["num", "user_longName", "user_shortName", "lastHeard", "hopsAway", "channel"])
+        vh = self.nodes_table.verticalHeader()
+        if vh is not None:
+            vh.setVisible(False)
+            vh.setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+            vh.setDefaultSectionSize(0)  # Hide the vertical header bar completely
+            vh.setMinimumSectionSize(0)
+        self.nodes_table.setShowGrid(False)
+        self.nodes_table.setAlternatingRowColors(True)
+        self.nodes_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.nodes_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.nodes_table.setStyleSheet('QTableWidget { border-radius: 12px; background: #23272F; color: #E5E7EB; font-size: 15px; } QHeaderView::section { background: #23272F; color: #3B82F6; font-weight: 600; border: none; } QTableWidget::item:selected { background: #3B82F6; color: #fff; }')
+        # Placeholder data
+        placeholder_data = [
+            ["1234", "Alice", "A", "2024-06-01 12:00", "1", "1"],
+            ["5678", "Bob", "B", "2024-06-01 12:05", "2", "1"],
+            ["9012", "Charlie", "C", "2024-06-01 12:10", "1", "2"]
+        ]
+        for row_idx, row_data in enumerate(placeholder_data):
+            for col_idx, value in enumerate(row_data):
+                item = QTableWidgetItem(value)
+                item.setForeground(Qt.GlobalColor.white)
+                self.nodes_table.setItem(row_idx, col_idx, item)
+        self.nodes_table.resizeColumnsToContents()
+        nodes_card_layout.addWidget(self.nodes_table)
+        nodes_card_layout.addStretch()
+        nodes_layout.addWidget(nodes_card)
+        nodes_layout.addStretch()
         self.stack.addWidget(self.nodes_page)
 
-        # Chats Page
+        # Chats Page (modern messenger style)
         self.chats_page = QWidget()
-        chats_layout = QHBoxLayout(self.chats_page)
-        chats_layout.setContentsMargins(32, 32, 32, 32)
-        chats_layout.setSpacing(16)
-        # Contacts list
-        self.chats_nodes_list = QListWidget()
-        self.chats_nodes_list.setStyleSheet('background: #232b45; color: #fff; border-radius: 8px; font-size: 15px; min-width: 180px;')
-        chats_layout.addWidget(self.chats_nodes_list)
-        self.chats_nodes_list.itemSelectionChanged.connect(self.on_chat_node_select)
-        # Chat area (scrollable)
+        self.chats_page.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        chats_layout = QVBoxLayout(self.chats_page)
+        chats_layout.setContentsMargins(40, 40, 40, 40)
+        chats_layout.setSpacing(20)
+        chats_header = QLabel("Chats")
+        chats_header.setProperty("class", "section_header")
+        chats_layout.addWidget(chats_header)
+        # Card container for chat content
+        chats_card = QGroupBox()
+        chats_card_layout = QHBoxLayout(chats_card)
+        chats_card_layout.setSpacing(0)
+        # Contacts list (left)
+        self.chats_contacts_list = QListWidget()
+        self.chats_contacts_list.setFixedWidth(220)
+        self.chats_contacts_list.setStyleSheet('QListWidget { border-radius: 12px; background: #23272F; color: #E5E7EB; font-size: 15px; } QListWidget::item:selected { background: #3B82F6; color: #fff; }')
+        # Placeholder contacts
+        contacts = ["Alice (1234)", "Bob (5678)", "Charlie (9012)"]
+        self.chats_contacts_list.addItems(contacts)
+        chats_card_layout.addWidget(self.chats_contacts_list)
+        # Chat area (right)
+        chat_area_container = QGroupBox()
+        chat_area_container.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Allow vertical expansion
+        chat_area_layout = QVBoxLayout(chat_area_container)
+        chat_area_layout.setContentsMargins(16, 16, 16, 16)
+        chat_area_layout.setSpacing(8)
+        # Scrollable chat area
         self.chat_scroll = QScrollArea()
         self.chat_scroll.setWidgetResizable(True)
-        self.chat_scroll.setStyleSheet('background: #232b45; border-radius: 12px;')
+        self.chat_scroll.setStyleSheet('QScrollArea { border-radius: 12px; background: #23272F; }')
+        self.chat_scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Allow vertical expansion
         self.chat_messages_area = QWidget()
         self.chat_messages_layout = QVBoxLayout(self.chat_messages_area)
         self.chat_messages_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.chat_scroll.setWidget(self.chat_messages_area)
-        chats_layout.addWidget(self.chat_scroll)
-        self.chats_page.setStyleSheet('background: #181f2f; border-radius: 16px;')
+        chat_area_layout.addWidget(self.chat_scroll)
+        # Remove addStretch here to allow scroll area to fill
+        chat_area_container.setStyleSheet('QGroupBox { background: #23272F; border-radius: 12px; border: 1px solid #353945; }')
+        chats_card_layout.addWidget(chat_area_container)
+        chats_card_layout.setStretch(0, 0)  # Contacts list fixed
+        chats_card_layout.setStretch(1, 1)  # Chat area expands
+        chats_layout.addWidget(chats_card)
+        chats_layout.setStretchFactor(chats_card, 1)  # Make the card fill vertical space
+        # Remove the bottom addStretch to allow full expansion
         self.stack.addWidget(self.chats_page)
-
-        # Navigation
+        # Navigation logic for sidebar buttons
         self.btn_database.clicked.connect(lambda: self.stack.setCurrentWidget(self.user_node_page))
         self.btn_nodes.clicked.connect(lambda: self.stack.setCurrentWidget(self.nodes_page))
         self.btn_chats.clicked.connect(lambda: self.stack.setCurrentWidget(self.chats_page))
-        self.select_button.clicked.connect(self.select_db_file)
-        self.btn_export_pdf.clicked.connect(self.export_pdf_dialog)
+        self.btn_export_pdf.clicked.connect(lambda: self.stack.setCurrentWidget(self.export_page))
+        self.chats_contacts_list.currentRowChanged.connect(lambda idx: self.show_chat_for_selected())
 
-        # Set default page
-        self.stack.setCurrentWidget(self.user_node_page)
+        # Export PDF Page (modern card style)
+        self.export_page = QWidget()
+        self.export_page.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        export_layout = QVBoxLayout(self.export_page)
+        export_layout.setContentsMargins(40, 40, 40, 40)
+        export_layout.setSpacing(20)
+        export_header = QLabel("Export PDF")
+        export_header.setProperty("class", "section_header")
+        export_layout.addWidget(export_header)
+        export_card = QGroupBox()
+        export_card_layout = QVBoxLayout(export_card)
+        export_card_layout.setSpacing(16)
+        # Section checkboxes
+        self.cb_case = QCheckBox("Case Info")
+        self.cb_user = QCheckBox("User Node Info")
+        self.cb_nodes = QCheckBox("Connected Nodes")
+        self.cb_chats = QCheckBox("Chats")
+        self.cb_case.setChecked(True)
+        self.cb_user.setChecked(True)
+        self.cb_nodes.setChecked(True)
+        self.cb_chats.setChecked(True)
+        export_card_layout.addWidget(self.cb_case)
+        export_card_layout.addWidget(self.cb_user)
+        export_card_layout.addWidget(self.cb_nodes)
+        export_card_layout.addWidget(self.cb_chats)
+        # Export button
+        self.export_button = QPushButton("Export PDF")
+        export_card_layout.addWidget(self.export_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        export_layout.addWidget(export_card)
+        export_layout.addStretch()
+        self.stack.addWidget(self.export_page)
+        # Navigation logic for sidebar button
+        self.btn_export_pdf.clicked.connect(lambda: self.stack.setCurrentWidget(self.export_page))
+        # Wire up export button
+        self.export_button.clicked.connect(self.export_pdf_from_page)
 
         # Placeholder for future logic
         self.db_path = None
@@ -228,6 +366,15 @@ class MeshagePR(QMainWindow):
         self.chat_data = {}
         self.local_id = None
         self.node_names = {}  # {user_id: longName}
+
+    def setup_sidebar_icons(self):
+        app_style = QApplication.style()
+        if app_style is not None:
+            self.btn_database.setIcon(app_style.standardIcon(QStyle.StandardPixmap.SP_FileIcon))
+            self.btn_nodes.setIcon(app_style.standardIcon(QStyle.StandardPixmap.SP_ComputerIcon))
+            self.btn_chats.setIcon(app_style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxInformation))
+            self.btn_export_pdf.setIcon(app_style.standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
+            self.btn_settings.setIcon(app_style.standardIcon(QStyle.StandardPixmap.SP_FileDialogDetailedView))
 
     def select_db_file(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Select Meshtastic SQLite DB", "", "All Files (*.*)")
@@ -240,17 +387,20 @@ class MeshagePR(QMainWindow):
             else:
                 self.case_info = None
             self.load_user_node_info()
-            self.connect_and_list_tables()
+            self.load_connected_nodes()
+            self.load_chats()
         else:
             self.user_node_info_label.setText("No database selected.")
-            self.nodes_tree.clear()
+            self.nodes_table.setRowCount(0)
+            self.chats_contacts_list.clear()
+            self.clear_chat_messages()
 
     def connect_and_list_tables(self):
         # Close previous connection if any
         if self.conn:
             self.conn.close()
             self.conn = None
-        self.nodes_tree.clear()
+        # TODO: Reimplement Connected Nodes page and clear nodes_tree
         if not self.db_path:
             return
         try:
@@ -259,55 +409,83 @@ class MeshagePR(QMainWindow):
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
             tables = [row[0] for row in cursor.fetchall()]
             if "NodeInfo" in tables:
-                self.load_nodeinfo()
-            self.load_chat_nodes()
+                pass  # TODO: Reimplement load_nodeinfo for new UI
+            # TODO: Reimplement load_chat_nodes for new UI
         except Exception as e:
             if self.conn:
                 self.conn.close()
                 self.conn = None
 
-    def load_nodeinfo(self):
-        self.nodes_tree.clear()
-        if not self.conn:
-            item = QTreeWidgetItem(["No database connection", "", "", "", "", ""])
-            self.nodes_tree.addTopLevelItem(item)
+    def load_user_node_info(self):
+        self.my_node_num = None
+        if not self.db_path:
+            self.user_node_info_label.setText("No database selected.")
             return
         try:
-            cursor = self.conn.cursor()
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM MyNodeInfo LIMIT 1;")
+            row = cursor.fetchone()
+            if row:
+                col_names = [desc[0] for desc in cursor.description]
+                info = "<b>User Node Info:</b><br>"
+                for name, value in zip(col_names, row):
+                    info += f"<b>{name}:</b> {value}<br>"
+                    if name == "myNodeNum":
+                        self.my_node_num = str(value)
+                self.user_node_info_label.setText(info)
+            else:
+                self.user_node_info_label.setText("No MyNodeInfo found in database.")
+            conn.close()
+        except Exception as e:
+            self.user_node_info_label.setText(f"Error loading MyNodeInfo: {e}")
+
+    def load_connected_nodes(self):
+        if not self.db_path:
+            self.nodes_table.setRowCount(0)
+            return
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
             cursor.execute("SELECT num, user_longName, user_shortName, lastHeard, hopsAway, channel FROM NodeInfo;")
             rows = cursor.fetchall()
-            for row in rows:
-                item = QTreeWidgetItem([str(col) if col is not None else '' for col in row])
-                self.nodes_tree.addTopLevelItem(item)
+            self.nodes_table.setRowCount(len(rows))
+            for row_idx, row in enumerate(rows):
+                for col_idx, value in enumerate(row):
+                    item = QTableWidgetItem(str(value) if value is not None else "")
+                    item.setForeground(Qt.GlobalColor.white)
+                    self.nodes_table.setItem(row_idx, col_idx, item)
+            self.nodes_table.resizeColumnsToContents()
             if not rows:
-                item = QTreeWidgetItem(["No nodes found", "", "", "", "", ""])
-                self.nodes_tree.addTopLevelItem(item)
+                self.nodes_table.setRowCount(0)
+            conn.close()
         except Exception as e:
-            item = QTreeWidgetItem([f"Error: {e}", "", "", "", "", ""])
-            self.nodes_tree.addTopLevelItem(item)
+            self.nodes_table.setRowCount(0)
+            # Optionally show error in a label or status bar
 
-    def load_chat_nodes(self):
-        self.chats_nodes_list.clear()
+    def load_chats(self):
+        self.chats_contacts_list.clear()
         self.chat_data = {}
         self.local_id = None
         self.node_names = {}  # {user_id: longName}
-        if not self.conn:
+        if not self.db_path:
+            self.clear_chat_messages()
             return
         try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
             # Load node names from NodeInfo
-            cursor = self.conn.cursor()
             try:
                 cursor.execute("SELECT num, user_longName FROM NodeInfo;")
                 for num, longName in cursor.fetchall():
                     name = longName if longName else str(num)
-                    if hasattr(self, 'my_node_num') and self.my_node_num and str(num) == self.my_node_num:
-                        name = f"{name} (User)"
                     self.node_names[str(num)] = name
             except Exception:
                 pass  # NodeInfo table may not exist
             self.node_names["4294967295"] = "Public"
             cursor.execute("SELECT message FROM log;")
             rows = cursor.fetchall()
+            print(f"Loaded {len(rows)} log messages from database.")
             sent_to_counts = {}
             received_to_counts = {}
             messages = []
@@ -334,6 +512,7 @@ class MeshagePR(QMainWindow):
                     # Received message
                     received_to_counts[to_id] = received_to_counts.get(to_id, 0) + 1
                     messages.append({'type': 'received', 'other_id': from_id, 'payload': payload, 'from': from_id, 'to': to_id})
+            print(f"Parsed {len(messages)} chat messages.")
             # Infer local_id as the most common 'to' in sent or received messages
             if sent_to_counts:
                 self.local_id = max(sent_to_counts, key=lambda k: sent_to_counts[k])
@@ -345,26 +524,37 @@ class MeshagePR(QMainWindow):
                 if other_id not in self.chat_data:
                     self.chat_data[other_id] = []
                 self.chat_data[other_id].append(msg)
-            # Populate chat nodes list
+            print(f"Chat data keys (user_ids): {list(self.chat_data.keys())}")
+            # Populate chat contacts list
             for user_id in self.chat_data:
                 display_name = self.node_names.get(user_id, user_id)
-                self.chats_nodes_list.addItem(f"{display_name} ({user_id})")
+                self.chats_contacts_list.addItem(f"{display_name} ({user_id})")
+            conn.close()
+            # Show chat for first contact by default
+            if self.chats_contacts_list.count() > 0:
+                self.chats_contacts_list.setCurrentRow(0)
+                self.show_chat_for_selected()
+            else:
+                self.clear_chat_messages()
         except Exception as e:
-            self.chats_nodes_list.addItem(f"Error: {e}")
+            print(f"Error loading chats: {e}")
+            self.chats_contacts_list.clear()
+            self.clear_chat_messages()
 
-    def on_chat_node_select(self):
-        # Clear previous chat display
+    def clear_chat_messages(self):
         for i in reversed(range(self.chat_messages_layout.count())):
             item = self.chat_messages_layout.itemAt(i)
             if item is not None:
                 widget = item.widget()
                 if widget:
                     widget.deleteLater()
-        selected_items = self.chats_nodes_list.selectedItems()
+
+    def show_chat_for_selected(self):
+        self.clear_chat_messages()
+        selected_items = self.chats_contacts_list.selectedItems()
         if not selected_items:
             print('No chat user selected.')
             return
-        # Extract user_id from display string
         user_id_match = re.search(r'\((\d+)\)$', selected_items[0].text())
         if not user_id_match:
             print('Could not extract user_id from selected item:', selected_items[0].text())
@@ -377,54 +567,29 @@ class MeshagePR(QMainWindow):
             print('Message:', msg)
             text = msg.get('payload', '')
             align = Qt.AlignmentFlag.AlignRight if msg.get('type') == 'sent' else Qt.AlignmentFlag.AlignLeft
-            # Only show sender's name above the message
             from_id = msg.get('from')
             from_name = self.node_names.get(from_id, from_id)
             name_label = QLabel(f"<b>{from_name}</b>")
-            name_label.setStyleSheet('color: #b0b8d1; font-size: 13px; margin-bottom: 2px;')
+            name_label.setStyleSheet('color: #E5E7EB; font-size: 13px; margin-bottom: 2px;')
             name_label.setTextFormat(Qt.TextFormat.RichText)
             self.chat_messages_layout.addWidget(name_label, alignment=align)
             bubble = QLabel(text)
             bubble.setWordWrap(True)
-            bubble.setMaximumWidth(500)
-            bubble.setStyleSheet('background-color: #e1ffc7; border-radius: 10px; padding: 8px; margin-bottom: 8px;' if msg.get('type') == 'sent' else 'background-color: #ffffff; border-radius: 10px; padding: 8px; margin-bottom: 8px;')
-            bubble.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
-            bubble.adjustSize()
-            bubble.setMinimumHeight(bubble.sizeHint().height())
+            bubble.setMaximumWidth(400)
+            bubble.setStyleSheet(
+                'background-color: #3B82F6; color: #fff; border-radius: 10px; padding: 10px; margin-bottom: 8px;' if msg.get('type') == 'sent' else
+                'background-color: #353945; color: #E5E7EB; border-radius: 10px; padding: 10px; margin-bottom: 8px;'
+            )
             self.chat_messages_layout.addWidget(bubble, alignment=align)
-            # Add a small spacer for clarity
-            self.chat_messages_layout.addSpacing(4)
 
-    def load_user_node_info(self):
-        self.my_node_num = None
-        if not self.db_path:
-            self.user_node_info_label.setText("No database selected.")
-            return
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM MyNodeInfo LIMIT 1;")
-            row = cursor.fetchone()
-            if row:
-                # Get column names
-                col_names = [desc[0] for desc in cursor.description]
-                info = "<b>User Node Info:</b><br>"
-                for name, value in zip(col_names, row):
-                    info += f"<b>{name}:</b> {value}<br>"
-                    if name == "myNodeNum":
-                        self.my_node_num = str(value)
-                self.user_node_info_label.setText(info)
-            else:
-                self.user_node_info_label.setText("No MyNodeInfo found in database.")
-            conn.close()
-        except Exception as e:
-            self.user_node_info_label.setText(f"Error loading MyNodeInfo: {e}")
-
-    def export_pdf_dialog(self):
-        dlg = ExportSectionsDialog(self)
-        if dlg.exec() == QDialog.DialogCode.Accepted:
-            sections = dlg.get_sections()
-            self.export_pdf(sections)
+    def export_pdf_from_page(self):
+        sections = {
+            'Case Info': self.cb_case.isChecked(),
+            'User Node Info': self.cb_user.isChecked(),
+            'Connected Nodes': self.cb_nodes.isChecked(),
+            'Chats': self.cb_chats.isChecked()
+        }
+        self.export_pdf(sections)
 
     def export_pdf(self, sections):
         pdf = FPDF()
@@ -488,15 +653,7 @@ class MeshagePR(QMainWindow):
             lines = [line for line in text.split('\n') if line.strip()]
             card("Node Details", lines)
 
-        # Connected Nodes
-        if sections.get('Connected Nodes') and hasattr(self, 'nodes_tree'):
-            pdf.add_page()
-            page_header()
-            section_header("Connected Nodes")
-            for i in range(self.nodes_tree.topLevelItemCount()):
-                item = self.nodes_tree.topLevelItem(i)
-                row = [item.text(col) for col in range(self.nodes_tree.columnCount())]
-                card("Node", [", ".join(row)])
+        # TODO: Reimplement Connected Nodes export for new UI
 
         # Chats
         if sections.get('Chats') and hasattr(self, 'chat_data'):
@@ -560,5 +717,6 @@ class MeshagePR(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MeshagePR()
+    window.setup_sidebar_icons()  # Assign icons after QApplication is created
     window.show()
     sys.exit(app.exec()) 
