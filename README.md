@@ -36,14 +36,7 @@
 
 ## Installation
 
-### 1. **Clone the Repository**
-```bash
-git clone https://github.com/Cal-Sonic/Meshage_PR.git
-cd Meshage_PR
-```
-#### Or
-
-### 2. **Cheack the releases for stand along executable**
+### **Cheack the releases for stand alone executable**
 
 ## Usage
 
