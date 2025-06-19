@@ -1,6 +1,6 @@
 # Meshage_PR
 
-**Meshage_PR** is a modern, forensics-inspired PyQt6 application for visually exploring and analyzing Meshtastic device SQLite databases extracted from mobile devices. It provides a sleek, user-friendly interface for digital investigators, hobbyists, and anyone interested in Meshtastic mesh network data.
+**Meshage_PR** is a PyQt6 application for parsing Meshtastic device SQLite databases extracted from mobile devices.
 
 ---
 
@@ -36,14 +36,7 @@
 
 ## Installation
 
-### 1. **Clone the Repository**
-```bash
-git clone https://github.com/Cal-Sonic/Meshage_PR.git
-cd Meshage_PR
-```
-#### Or
-
-### 2. **Cheack the releases for stand along executable**
+### **Cheack the [releases](https://github.com/Cal-Sonic/Meshage_PR/releases) for stand-alone executable**
 
 ## Usage
 
