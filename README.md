@@ -21,9 +21,6 @@
 - **PDF Report Export:**  
   Export a professional, customizable PDF report. Select which sections to include, and automatically name the report with the evidence number.
 
-- **Modern UI:**  
-  Dark, navy-themed interface with sidebar navigation and responsive layouts.
-
 ---
 
 ## Supported Devices & Database Location
@@ -34,12 +31,6 @@
   /data/data/com.geeksville.mesh/databases/
   ```
   (You will need to use your forensic phone extraction tool of choice to access this path and export the database file.)
-
----
-
-## Screenshots
-
-*(Add screenshots here if you have them!)*
 
 ---
 
