@@ -41,27 +41,9 @@
 git clone https://github.com/Cal-Sonic/Meshage_PR.git
 cd Meshage_PR
 ```
+#### Or
 
-### 2. **Install Dependencies (Recommended)**
-Install all required packages using the provided requirements.txt:
-```bash
-pip install -r requirements.txt
-```
-
-### 3. **Run the App**
-```bash
-python meshtastic_db_viewer_qt.py
-```
-
-### 4. **Build a Standalone Executable (Optional)**
-To create a Windows executable:
-```bash
-pip install pyinstaller
-pyinstaller --noconfirm --onefile --windowed meshtastic_db_viewer_qt.py
-```
-The `.exe` will be in the `dist` folder.
-
----
+### 2. **Cheack the releases for stand along executable**
 
 ## Usage
 
@@ -70,23 +52,3 @@ The `.exe` will be in the `dist` folder.
 3. **Browse node info, connected nodes, and chat history** using the sidebar.
 4. **Export a PDF report** with your chosen sections.
 
----
-
-## Contributing
-
-Pull requests and suggestions are welcome!  
-Please open an issue or submit a PR for bug fixes, features, or improvements.
-
----
-
-## License
-
-MIT License
-
----
-
-## Acknowledgments
-
-
-- [PyQt6](https://riverbankcomputing.com/software/pyqt/intro) for the GUI framework.
-- [fpdf](https://pyfpdf.github.io/fpdf2/) for PDF generation. 
