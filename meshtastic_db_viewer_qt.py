@@ -6,7 +6,8 @@ from PyQt6.QtWidgets import (
     QSizePolicy, QSpacerItem, QDialog, QDialogButtonBox, QFormLayout, QLineEdit, QTextEdit,
     QCheckBox, QMessageBox, QToolButton, QStyle, QGroupBox, QHeaderView
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize, QRectF
+from PyQt6.QtGui import QPainter, QPainterPath, QColor, QFont, QFontMetrics
 import os
 import sqlite3
 import re
@@ -102,6 +103,50 @@ class FPDF(BaseFPDF):
         self.set_font('Arial', 'I', 9)
         self.set_text_color(150, 150, 150)
         self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'R')
+
+class ChatBubble(QWidget):
+    def __init__(self, text, is_user, parent=None):
+        super().__init__(parent)
+        self.text = text
+        self.is_user = is_user
+        
+        self.bubble_font = QFont()
+        self.bubble_font.setPointSize(11)
+        self.font_metrics = QFontMetrics(self.bubble_font)
+
+        self.text_padding = 10
+        self.max_width = 500
+        
+        self.bg_color = QColor("#3B82F6") if self.is_user else QColor("#353945")
+        self.text_color = QColor("#FFFFFF") if self.is_user else QColor("#E5E7EB")
+
+        self.text_rect = self.font_metrics.boundingRect(
+            0, 0, self.max_width - 2 * self.text_padding, 10000,
+            Qt.TextFlag.TextWordWrap, self.text
+        )
+        self.setMinimumHeight(self.text_rect.height() + 2 * self.text_padding)
+
+    def sizeHint(self):
+        width = min(self.max_width, self.text_rect.width() + 2 * self.text_padding)
+        height = self.text_rect.height() + 2 * self.text_padding
+        return QSize(width, height)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        path = QPainterPath()
+        rect = self.rect()
+        rect.setWidth(self.sizeHint().width())
+        rect.setHeight(self.sizeHint().height())
+
+        path.addRoundedRect(QRectF(rect), 10, 10)
+        painter.fillPath(path, self.bg_color)
+
+        painter.setPen(self.text_color)
+        painter.setFont(self.bubble_font)
+        text_draw_rect = rect.adjusted(self.text_padding, self.text_padding, -self.text_padding, -self.text_padding)
+        painter.drawText(text_draw_rect, Qt.TextFlag.TextWordWrap | Qt.AlignmentFlag.AlignVCenter, self.text)
 
 class MeshagePR(QMainWindow):
     def __init__(self):
@@ -303,9 +348,12 @@ class MeshagePR(QMainWindow):
         self.chat_scroll.setWidgetResizable(True)
         self.chat_scroll.setStyleSheet('QScrollArea { border-radius: 12px; background: #23272F; }')
         self.chat_scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Allow vertical expansion
+        self.chat_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.chat_messages_area = QWidget()
         self.chat_messages_layout = QVBoxLayout(self.chat_messages_area)
         self.chat_messages_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.chat_messages_layout.setContentsMargins(8, 8, 8, 8)
+        self.chat_messages_layout.setSpacing(4)
         self.chat_scroll.setWidget(self.chat_messages_area)
         chat_area_layout.addWidget(self.chat_scroll)
         # Remove addStretch here to allow scroll area to fill
@@ -322,7 +370,8 @@ class MeshagePR(QMainWindow):
         self.btn_nodes.clicked.connect(lambda: self.stack.setCurrentWidget(self.nodes_page))
         self.btn_chats.clicked.connect(lambda: self.stack.setCurrentWidget(self.chats_page))
         self.btn_export_pdf.clicked.connect(lambda: self.stack.setCurrentWidget(self.export_page))
-        self.chats_contacts_list.currentRowChanged.connect(lambda idx: self.show_chat_for_selected())
+        # Fix: Connect the signal properly and temporarily block it during loading
+        self.chats_contacts_list.currentRowChanged.connect(self.show_chat_for_selected)
 
         # Export PDF Page (modern card style)
         self.export_page = QWidget()
@@ -532,8 +581,12 @@ class MeshagePR(QMainWindow):
             conn.close()
             # Show chat for first contact by default
             if self.chats_contacts_list.count() > 0:
+                # Temporarily block the signal to prevent unwanted firing
+                self.chats_contacts_list.blockSignals(True)
                 self.chats_contacts_list.setCurrentRow(0)
-                self.show_chat_for_selected()
+                self.chats_contacts_list.blockSignals(False)
+                # Manually call show_chat_for_selected with the row index
+                self.show_chat_for_selected(0)
             else:
                 self.clear_chat_messages()
         except Exception as e:
@@ -549,38 +602,56 @@ class MeshagePR(QMainWindow):
                 if widget:
                     widget.deleteLater()
 
-    def show_chat_for_selected(self):
+    def show_chat_for_selected(self, row_index=None):
         self.clear_chat_messages()
-        selected_items = self.chats_contacts_list.selectedItems()
-        if not selected_items:
-            print('No chat user selected.')
-            return
-        user_id_match = re.search(r'\((\d+)\)$', selected_items[0].text())
+        
+        if row_index is not None and row_index >= 0:
+            item = self.chats_contacts_list.item(row_index)
+            if not item:
+                print('No item found at row index:', row_index)
+                return
+        else:
+            selected_items = self.chats_contacts_list.selectedItems()
+            if not selected_items:
+                print('No chat user selected.')
+                return
+            item = selected_items[0]
+        
+        user_id_match = re.search(r'\((\d+)\)$', item.text())
         if not user_id_match:
-            print('Could not extract user_id from selected item:', selected_items[0].text())
+            print('Could not extract user_id from selected item:', item.text())
             return
         user_id = user_id_match.group(1)
-        print(f'Selected user_id: {user_id}')
         messages = self.chat_data.get(user_id, [])
-        print(f'Found {len(messages)} messages for user_id {user_id}')
+
         for msg in messages:
-            print('Message:', msg)
             text = msg.get('payload', '')
             align = Qt.AlignmentFlag.AlignRight if msg.get('type') == 'sent' else Qt.AlignmentFlag.AlignLeft
             from_id = msg.get('from')
             from_name = self.node_names.get(from_id, from_id)
+            
+            # Name label (as before)
             name_label = QLabel(f"<b>{from_name}</b>")
             name_label.setStyleSheet('color: #E5E7EB; font-size: 13px; margin-bottom: 2px;')
             name_label.setTextFormat(Qt.TextFormat.RichText)
             self.chat_messages_layout.addWidget(name_label, alignment=align)
-            bubble = QLabel(text)
-            bubble.setWordWrap(True)
-            bubble.setMaximumWidth(400)
-            bubble.setStyleSheet(
-                'background-color: #3B82F6; color: #fff; border-radius: 10px; padding: 10px; margin-bottom: 8px;' if msg.get('type') == 'sent' else
-                'background-color: #353945; color: #E5E7EB; border-radius: 10px; padding: 10px; margin-bottom: 8px;'
-            )
-            self.chat_messages_layout.addWidget(bubble, alignment=align)
+
+            # Use the new ChatBubble widget
+            is_user_message = hasattr(self, 'my_node_num') and msg.get('from') == self.my_node_num
+            bubble = ChatBubble(text, is_user_message)
+            
+            # We need a container to align the bubble correctly
+            bubble_container = QWidget()
+            bubble_layout = QHBoxLayout(bubble_container)
+            bubble_layout.setContentsMargins(0, 0, 0, 0)
+            if align == Qt.AlignmentFlag.AlignRight:
+                bubble_layout.addStretch()
+                bubble_layout.addWidget(bubble)
+            else:
+                bubble_layout.addWidget(bubble)
+                bubble_layout.addStretch()
+                
+            self.chat_messages_layout.addWidget(bubble_container)
 
     def export_pdf_from_page(self):
         sections = {
